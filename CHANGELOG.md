@@ -2,7 +2,8 @@
 
 - Documentation only: `README.md` and `CHANGELOG.md` are now written in English,
   as pub.dev expects. This restores the 10 points of the "Follow Dart file
-  conventions" score that were lost to the non-ASCII check.
+  conventions" score that were lost to the non-ASCII check. Chinese versions are
+  kept in `doc/README.zh.md` and `doc/CHANGELOG.zh.md`.
 - No code changes; identical to 1.0.2.
 
 ## 1.0.2

@@ -1,5 +1,7 @@
 # yu_video_player
 
+English | [简体中文](https://github.com/yonglemingyu/yu_video_player/blob/main/doc/README.zh.md)
+
 Cache the opening bytes of a remote video to disk, so the first seconds play
 from disk while the rest keeps streaming from the network.
 
