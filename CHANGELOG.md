@@ -1,29 +1,47 @@
+## 1.0.3
+
+- Documentation only: `README.md` and `CHANGELOG.md` are now written in English,
+  as pub.dev expects. This restores the 10 points of the "Follow Dart file
+  conventions" score that were lost to the non-ASCII check.
+- No code changes; identical to 1.0.2.
+
 ## 1.0.2
 
-- 修复 iOS 画面全黑（有声音、进度条在走）：Flutter 的 platform view 编号从 0 开始，
-  App 里首个视图拿到的就是 `viewId=0`，而 `attachView` / `detachView` 里用
-  `if viewId != 0` 过滤，把合法的 0 号视图丢掉了，`playerLayer.player` 一直没设上。
-  现在改为可选值判空，不再把 0 当无效值。Android 侧原本就是 `if (viewId != null)`，不受影响。
-- 视图回收时改走 `YUPlayerInstance.detachViews(viewId)` 摘画面：播放器晚于视图创建时
-  `playerId` 恒为 0，原来的 `if playerId > 0` 会漏掉 detach。
-- `tool/switch_core_dependency.sh` 的 local 模式改用同级目录相对路径，不再写死绝对路径。
-- 缓存、预取、换源逻辑与 Android 侧均无变化。
+- Fixed a black screen on iOS where audio and the progress bar kept working.
+  Flutter numbers platform views from 0, so the first view in an app gets
+  `viewId=0`, while `attachView` and `detachView` filtered with `if viewId != 0`
+  and dropped that legitimate view. As a result `playerLayer.player` was never
+  set. Both handlers now unwrap the optional instead of treating 0 as invalid.
+  Android already used `if (viewId != null)` and was unaffected.
+- View teardown now detaches through `YUPlayerInstance.detachViews(viewId)`.
+  When the player is created after the view, the view's `playerId` stays 0, so
+  the previous `if playerId > 0` check skipped the detach.
+- `tool/switch_core_dependency.sh` local mode now uses a relative path to the
+  sibling core repository instead of a hard-coded absolute path.
+- No changes to caching, prefetching, source switching, or the Android side.
 
 ## 1.0.1
 
-- 修复 iOS 侧 SPM 依赖解析失败：`ios/yu_video_player/Package.swift` 里引用核心包时，
-  `package:` 参数必须是 SwiftPM 由 URL 推导出的 identity `yu_video_player_ios`，
-  1.0.0 误写成了远端声明的 `name: "YUVideoPlayerIOS"`，导致宿主构建报
-  `unknown package 'YUVideoPlayerIOS' in dependencies of target 'yu_video_player'`。
-- `tool/switch_core_dependency.sh` 的 local 模式同步对齐 identity，并把本地核心仓库路径改为
-  可用 `CORE_LOCAL_PATH` 覆盖（原路径硬编码了旧机器的用户名）。
-- Android 无变化。
+- Fixed SPM dependency resolution on iOS. In `ios/yu_video_player/Package.swift`
+  the `package:` argument of `.product(...)` must be the SwiftPM identity derived
+  from the repository URL (`yu_video_player_ios`); 1.0.0 used the remote
+  manifest's `name: "YUVideoPlayerIOS"` instead, which failed the host build with
+  `unknown package 'YUVideoPlayerIOS' in dependencies of target 'yu_video_player'`.
+- `tool/switch_core_dependency.sh` local mode now matches that identity, and the
+  local core path can be overridden with `CORE_LOCAL_PATH` (it used to hard-code
+  the previous machine's user name).
+- No changes on Android.
 
 ## 1.0.0
 
-- 首个版本：Android（Media3 DataSource）与 iOS（AVAssetResourceLoader）双端前缀缓存。
-- 支持按字节配置单条与全局上限，超过上限按最久未使用淘汰。
-- 支持播放前预取、播放中顺序补写、条目列表与清理。
-- 前缀缓存核心拆分为独立包：iOS 为 `YUVideoPlayerIOS`（SwiftPM），Android 为
-  `yu_video_player_android`（Maven），本包仅保留通道与 PlatformView。
-- iOS 改为纯 SwiftPM，移除 podspec；最低 Flutter 版本提升到 3.44。
+- First release: prefix cache for Android (Media3 `DataSource`) and iOS
+  (`AVAssetResourceLoader`).
+- Per-video and global limits configured in bytes; entries are evicted
+  least-recently-used once the global limit is exceeded.
+- Prefetch before playback, sequential backfill during playback, entry listing
+  and clearing.
+- The prefix cache core is split into standalone packages: `YUVideoPlayerIOS`
+  (SwiftPM) on iOS and `yu_video_player_android` (Maven) on Android. This package
+  keeps only the channels and the PlatformView.
+- iOS is now SwiftPM-only; the podspec was removed and the minimum Flutter
+  version is 3.44.

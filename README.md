@@ -7,142 +7,156 @@ Designed for the "fast first frame" case: prefetch a small prefix before the
 user taps play, and the player still behaves like a normal online player after
 that prefix.
 
-## 平台支持
+## Platform support
 
-| 平台 | 实现 | 最低版本 |
+| Platform | Implementation | Minimum |
 |---|---|---|
-| Android | `DataSource`（Media3） | API 21 |
+| Android | `DataSource` (Media3) | API 21 |
 | iOS | `AVAssetResourceLoader` | iOS 15 |
 
-两端都不需要宿主额外配置：
+Neither platform needs host-side configuration:
 
-- Android 不走本地代理，不需要 `network_security_config`
-- iOS 用自定义 scheme，不需要 ATS 例外
+- Android uses no local proxy, so no `network_security_config` is required.
+- iOS uses a custom URL scheme, so no ATS exception is required.
 
-## 安装
+## Installation
 
 ```yaml
 dependencies:
-  yu_video_player:
-    path: ../yu_video_player   # 或 pub 地址
+  yu_video_player: ^1.0.3
 ```
 
-最低要求 Flutter 3.44（Swift Package Manager 成为 iOS 默认依赖管理器的那一版）。
+Requires Flutter 3.44 or later (the release where Swift Package Manager became
+the default dependency manager on iOS).
 
-iOS 只走 SwiftPM，不提供 podspec。CocoaPods 官方仓库已于 2026-12-02 转为只读，
-还在用 CocoaPods 的工程请先迁移。
+iOS is supported through SwiftPM only; no podspec is shipped. The CocoaPods
+trunk went read-only on 2026-12-02, so projects still on CocoaPods should
+migrate first.
 
-## 仓库结构
+## Repository layout
 
-原生核心不在本包里，而是两个独立发布的包，本包只做桥接：
+The native cores are not part of this package. This package is a bridge over
+two separately published packages:
 
-| 仓库 | 内容 | 发布方式 |
+| Repository | Contents | Distribution |
 |---|---|---|
-| `yu_video_player` | Dart API、通道、PlatformView | pub.dev |
-| `yu_video_player_ios` | iOS 前缀缓存（AVAssetResourceLoader） | git tag，SwiftPM 消费 |
-| `yu_video_player_android` | Android 前缀缓存（Media3 DataSource） | Maven（JitPack / Central） |
+| `yu_video_player` | Dart API, channels, PlatformView | pub.dev |
+| `yu_video_player_ios` | iOS prefix cache (`AVAssetResourceLoader`) | git tag, consumed by SwiftPM |
+| `yu_video_player_android` | Android prefix cache (Media3 `DataSource`) | Maven (JitPack / Central) |
 
-改原生逻辑去对应的核心仓库，改通道和 Dart API 才回本包。
+Change native logic in the matching core repository; change channels or the
+Dart API here.
 
-本地联调时 iOS 依赖指向本地核心目录（`ios/yu_video_player/Package.swift` 里的
-`coreDependency`），发布前用 `tool/switch_core_dependency.sh remote` 切到远端。
-Android 侧本地联调走 `mavenLocal()`，先在核心仓库执行 `./gradlew publishToMavenLocal`。
+For local development the iOS dependency points at the local core checkout
+through `coreDependency` in `ios/yu_video_player/Package.swift`; run
+`tool/switch_core_dependency.sh remote` before publishing. On Android, local
+integration resolves through `mavenLocal()`, so run
+`./gradlew publishToMavenLocal` in the core repository first.
 
-## 用法
+## Usage
 
 ```dart
 import 'package:yu_video_player/yu_video_player.dart';
 
-// 1. 配置容量（可选，默认全局 1GB、单条 16MB）
+// 1. Configure capacity (optional; defaults to 1GB total, 16MB per video)
 await YUVideoPrefixCache.configure(
   maxTotalBytes: 1024 * 1024 * 1024,
   maxBytesPerVideo: 16 * 1024 * 1024,
 );
 
-// 2. 详情页曝光时预取
+// 2. Prefetch when the detail page becomes visible
 await YUVideoPrefixCache.prefetch('3412', playUrl);
 
-// 3. 查看用量
+// 3. Inspect usage
 final stats = await YUVideoPrefixCache.stats();
-debugPrint('${stats.count} 条，${stats.totalBytes ~/ 1024 ~/ 1024} MB');
+debugPrint('${stats.count} entries, ${stats.totalBytes ~/ 1024 ~/ 1024} MB');
 
-// 4. 设置页列表
+// 4. List entries for a settings screen
 for (final entry in await YUVideoPrefixCache.entries()) {
   debugPrint('${entry.key} ${entry.bytes} ${entry.progress}');
 }
 
-// 5. 清理
+// 5. Clear
 await YUVideoPrefixCache.clear('3412');
 await YUVideoPrefixCache.clearAll();
 ```
 
-## 播放器
+## Player
 
-`YUPlayerController` + `YUVideoPlayer` 已经封装好双端 PlatformView，数据源自动走缓存链路：
+`YUPlayerController` and `YUVideoPlayer` wrap the native PlatformView on both
+platforms, and the data source goes through the cache path automatically:
 
 ```dart
 final controller = YUPlayerController(vid: 'dom01', url: playUrl, autoPlay: true);
-// 挂载后 view 创建、开始播放
+// Mounting creates the view and starts playback
 Column(children: [AspectRatio(aspectRatio: 16 / 9, child: YUVideoPlayer(controller: controller))]);
 
 controller.play();
 controller.seekTo(const Duration(seconds: 3));
-controller.setVolume(0);      // 0 = 静音但仍继续播
+controller.setVolume(0);      // 0 = muted, playback continues
 controller.setSpeed(1.5);     // 0.25 ~ 4.0
 ```
 
-### 播放中换源
+### Switching source during playback
 
-`setSource` 只替换原生 item / MediaSource，播放器实例与 view 都保留，
-所以不会出现"整块 view 重建"的黑屏空档：
+`setSource` replaces only the native item or MediaSource. The player instance
+and the view are kept, so there is no black gap from rebuilding the whole view:
 
 ```dart
-// 换一条片源
+// Switch to another video
 await controller.setSource(vid: 'dom02', url: nextUrl);
 
-// 只换签名 / CDN 地址：vid 不变，继续命中同一份缓存
+// Refresh the signature or CDN address only: same vid, same cache entry
 await controller.setSource(vid: 'dom01', url: freshSignedUrl);
 
-// 传相同参数 = 原地重试
+// Same arguments = retry in place
 await controller.setSource(vid: 'dom01', url: playUrl);
 ```
 
-换源瞬间 `value` 会回到未初始化状态（时长、分辨率、进度清零），
-等原生 `ready` 事件回来再填；音量与倍速是播放器级设置，不受影响。
+`value` resets to the uninitialized state on switch (duration, size and
+position are cleared) and is filled in when the native `ready` event arrives.
+Volume and speed are player-level settings and are not affected.
 
-## 原生侧接入
+## Native integration
 
-`prefetch` 只负责把字节下到磁盘。要让播放器用上这份缓存，需要在原生侧
-把播放器的数据源替换掉：
+`prefetch` only writes bytes to disk. To make a player use that cache, swap its
+data source on the native side:
 
-- **Android**：用 `YUVideoCache.mediaSource(context, vid, url)` 替代
-  `MediaItem`，切换视频时调用一次，并 `acquire` / `release`。
-- **iOS**：用 `YUVideoCache.playerItem(vid:realURL:)` 替代
-  `AVPlayerItem(url:)`，离开播放页时 `YUVideoCache.release(vid:)`。
+- **Android**: replace `MediaItem` with
+  `YUVideoCache.mediaSource(context, vid, url)`, call it once per video switch,
+  and pair `acquire` with `release`.
+- **iOS**: replace `AVPlayerItem(url:)` with
+  `YUVideoCache.playerItem(vid:realURL:)`, and call
+  `YUVideoCache.release(vid:)` when leaving the player screen.
 
-两端的详细步骤见仓库文档：
+Detailed steps live in the repository docs:
 
 - `docs/android-缓存实现说明.md`
 - `docs/ios-缓存接入说明.md`
 - `docs/ios-缓存拦截方案.md`
 
-## 工作原理
+## How it works
 
 ```
-播放器请求 bytes=N-
-  ├─ N 落在已缓存前缀内 → 从磁盘读
-  ├─ N 越界            → 回源
-  └─ 跨界              → 同一个请求里先读磁盘、再回源
+Player requests bytes=N-
+  |- N inside the cached prefix  -> read from disk
+  |- N past the prefix           -> fetch from origin
+  '- N spans the boundary        -> read disk, then continue from origin
+                                      within the same request
 ```
 
-缓存以 vid 为 key，与 URL 无关。所有入口地址（签名、CDN 切换）都不影响命中。
+The cache is keyed by vid, not by URL. Signature refreshes and CDN switches do
+not affect cache hits.
 
-## 已知限制
+## Known limitations
 
-- 只缓存从 0 开始的一段，往回拖到前缀之外需要重新下载。
-- 写入只接受顺序追加；播放一开始就 seek 到中段时，那段不落盘。
-- 未做 HLS 分片级缓存。
-- 不支持 AirPlay（iOS 自定义 scheme 无法外放）。
+- Only the range starting at 0 is cached; seeking back outside the prefix
+  downloads again.
+- Writes are sequential and append-only, so a seek into the middle at the very
+  start of playback is not persisted.
+- HLS segment-level caching is not implemented.
+- AirPlay is not supported (iOS custom URL schemes cannot be sent to an
+  external device).
 
 ## License
 
