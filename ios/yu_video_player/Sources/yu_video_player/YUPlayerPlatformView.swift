@@ -50,10 +50,12 @@ final class YUPlayerPlatformView: NSObject, FlutterPlatformView {
 
     deinit {
         YUPlayerInstance.unregister(viewId: viewId)
-        // 只摘画面，不碰播放器：声音继续
-        if playerId > 0 {
-            YUPlayerInstance.find(playerId)?.detach(container)
-        }
+        // 只摘画面，不碰播放器：声音继续。
+        //
+        // 不能写成 `if playerId > 0 { find(playerId)?.detach(...) }`：播放器
+        // 晚于视图创建时 playerId 恒为 0（视图先建、播放器后建是常态），
+        // 那样会漏掉 detach。而且 viewId 本身可以是 0，也不能拿它当无效值。
+        YUPlayerInstance.detachViews(viewId)
         YULog.death("视图", logId,
                     "\(YULog.alive(since: createdAt)) 触发=Flutter 回收 playerId=\(playerId)")
     }
