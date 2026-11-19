@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 切换 yu_video_player 对 iOS 核心包（YUVideoPlayerIOS）的依赖方式。
-#   ./tool/switch_core_dependency.sh local          # 本地联调（指向本地核心仓库路径）
+#   ./tool/switch_core_dependency.sh local          # 本地联调（CORE_LOCAL_PATH 可指定核心仓库路径）
 #   ./tool/switch_core_dependency.sh remote <owner> # 发布前（指向 GitHub 上的核心仓库）
 set -euo pipefail
 
@@ -11,7 +11,11 @@ PKG="$ROOT/ios/yu_video_player/Package.swift"
 
 case "$MODE" in
   local)
-    LINE='let coreDependency: Package.Dependency = .package(name: "YUVideoPlayerIOS", path: "/Users/jinchen/Desktop/yu_video_player_ios")'
+    # 本地核心仓库路径，默认 ~/Desktop/yu_video_player_ios，可用 CORE_LOCAL_PATH 覆盖。
+    # 目录名必须是 yu_video_player_ios：SwiftPM 的 identity 取自路径最后一段，
+    # 与 Package.swift 里 .product(package:) 的写法必须一致。
+    CORE_PATH="${CORE_LOCAL_PATH:-$HOME/Desktop/yu_video_player_ios}"
+    LINE="let coreDependency: Package.Dependency = .package(name: \"yu_video_player_ios\", path: \"$CORE_PATH\")"
     ;;
   remote)
     if [ -z "$OWNER" ]; then

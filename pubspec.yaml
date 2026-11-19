@@ -1,6 +1,6 @@
 name: yu_video_player
 description: Cache the first N bytes of a remote video to disk on Android and iOS, so the opening seconds play from disk while the rest streams from the network.
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/yonglemingyu/yu_video_player
 repository: https://github.com/yonglemingyu/yu_video_player
 issue_tracker: https://github.com/yonglemingyu/yu_video_player/issues

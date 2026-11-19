@@ -26,7 +26,10 @@ let package = Package(
       name: "yu_video_player",
       dependencies: [
         .product(name: "FlutterFramework", package: "FlutterFramework"),
-        .product(name: "YUVideoPlayerIOS", package: "YUVideoPlayerIOS")
+        // 第二个参数是 SwiftPM 由依赖 URL 推导出的 identity（仓库名小写），
+        // 不是远端 Package.swift 里声明的 name: "YUVideoPlayerIOS"，写错会报
+        // unknown package 'YUVideoPlayerIOS'。
+        .product(name: "YUVideoPlayerIOS", package: "yu_video_player_ios")
       ]
     )
   ]
