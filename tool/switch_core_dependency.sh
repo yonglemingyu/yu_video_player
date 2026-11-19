@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 切换 yu_video_player 对 iOS 核心包（YUVideoPlayerIOS）的依赖方式。
-#   ./tool/switch_core_dependency.sh local          # 本地联调（CORE_LOCAL_PATH 可指定核心仓库路径）
+#   ./tool/switch_core_dependency.sh local          # 本地联调（默认同级目录的相对路径，CORE_LOCAL_PATH 可覆盖）
 #   ./tool/switch_core_dependency.sh remote <owner> # 发布前（指向 GitHub 上的核心仓库）
 set -euo pipefail
 
@@ -11,10 +11,16 @@ PKG="$ROOT/ios/yu_video_player/Package.swift"
 
 case "$MODE" in
   local)
-    # 本地核心仓库路径，默认 ~/Desktop/yu_video_player_ios，可用 CORE_LOCAL_PATH 覆盖。
+    # 本地联调。默认用相对路径：核心仓库与本仓库同级，都放在同一个父目录下，
+    # 这样换机器、换用户名都不用改，也不会写死某台机器的绝对路径。
+    #
+    # 相对路径以 Package.swift 所在目录（ios/yu_video_player/）为基准，
+    # 向上三级即三个仓库的共同父目录。
+    #
     # 目录名必须是 yu_video_player_ios：SwiftPM 的 identity 取自路径最后一段，
     # 与 Package.swift 里 .product(package:) 的写法必须一致。
-    CORE_PATH="${CORE_LOCAL_PATH:-$HOME/Desktop/yu_video_player_ios}"
+    # 核心仓库不在同级目录时，用 CORE_LOCAL_PATH 指定绝对路径覆盖。
+    CORE_PATH="${CORE_LOCAL_PATH:-../../../yu_video_player_ios}"
     LINE="let coreDependency: Package.Dependency = .package(name: \"yu_video_player_ios\", path: \"$CORE_PATH\")"
     ;;
   remote)
