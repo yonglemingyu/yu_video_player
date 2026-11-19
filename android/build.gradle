@@ -1,0 +1,41 @@
+group 'dev.yu.videoplayer'
+version '1.0.0'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        // 本地联调：核心包用 ./gradlew publishToMavenLocal 装到本机
+        mavenLocal()
+        // 正式依赖：核心包由 JitPack 提供
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'dev.yu.videoplayer'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 21
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // 前缀缓存核心（ExoPlayer / DataSource / 日志），media3 由它 api 传递过来
+    api 'com.github.yonglemingyu:yu_video_player_android:1.0.0'
+}
