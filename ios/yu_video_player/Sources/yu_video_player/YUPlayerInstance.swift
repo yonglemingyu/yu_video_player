@@ -77,10 +77,7 @@ final class YUPlayerInstance: NSObject {
         return views[viewId]
     }
 
-    /// 视图被 Flutter 回收时调用：把所有挂在它上面的播放器摘掉。
-    ///
-    /// 不能按 `playerId` 反查——播放器可能晚于视图创建，那时视图记下的
-    /// `playerId` 恒为 0，用它当条件会漏掉真正的 detach，画面层就一直挂着旧容器。
+    /// 视图被回收时调用：把挂在该视图上的播放器画面摘掉。
     static func detachViews(_ viewId: Int64) {
         lock.lock()
         let all = Array(registry.values)
@@ -214,7 +211,7 @@ final class YUPlayerInstance: NSObject {
         }
     }
 
-    /// 只摘「挂在这个 viewId 上的」画面，供 `YUPlayerInstance.detachViews` 遍历调用。
+    /// 若画面正挂在这个 viewId 上就摘掉，供 `detachViews` 遍历调用。
     func detachIfAttached(to viewId: Int64) {
         guard !released, attachedViewId == viewId, let container = attachedContainer else { return }
         detach(container)
@@ -269,15 +266,13 @@ final class YUPlayerInstance: NSObject {
                        autoPlay: autoPlay)
             result(nil)
         case "attachView":
-            // 注意：**不能用 0 表示"无效 viewId"**。Flutter 的 platform view
-            // 编号从 0 开始（本机 iOS 上首个视图拿到的就是 viewId=0），
-            // 一旦把 0 过滤掉，首个播放器就永远 attach 不上画面层 ——
-            // 表现为有声音、进度在走、画面全黑。
+            // 接上画面层。viewId 由 Flutter 分配，0 是合法编号
             if let viewId = (args?["viewId"] as? NSNumber)?.int64Value {
                 attachView(viewId)
             }
             result(nil)
         case "detachView":
+            // 摘掉画面层
             if let viewId = (args?["viewId"] as? NSNumber)?.int64Value {
                 detachView(viewId)
             }
