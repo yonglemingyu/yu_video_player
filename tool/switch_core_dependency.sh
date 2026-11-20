@@ -16,9 +16,15 @@ case "$MODE" in
     #
     # 这里必须用绝对路径，不能写相对路径：宿主工程里这个插件包是被 Flutter
     # 以软链接挂到 ios/Flutter/ephemeral/Packages/.packages/yu_video_player 的，
-    # Xcode 解析 path 依赖时不会先解软链接，`../../../` 会从 ephemeral 目录往上算，
-    # 最终去找 ios/Flutter/ephemeral/yu_video_player_ios，报
+    # Xcode 解析 path 依赖时不会先解软链接，路径是按软链接字面位置往上算的，
+    # `../../../` 只爬到 ios/Flutter/ephemeral，最终去找
+    # ios/Flutter/ephemeral/yu_video_player_ios，报
     # "cannot be accessed (... doesn't exist in file system)"。
+    #
+    # 相对路径不是完全不行，实测要写 7 级（../../../../../../../yu_video_player_ios）
+    # 才能爬回仓库父目录；但这个深度绑死在调用方的位置上 —— 宿主工程是 7 级，
+    # 本包自己的 example 工程一旦也跑过 iOS，会多一层变成 8 级。一个值伺候不了
+    # 两处，所以干脆用脚本算绝对路径。
     #
     # 目录名必须是 yu_video_player_ios：SwiftPM 的 identity 取自路径最后一段，
     # 与 Package.swift 里 .product(package:) 的写法必须一致。
