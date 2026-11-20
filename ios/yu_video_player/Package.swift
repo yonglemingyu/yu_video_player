@@ -3,9 +3,7 @@
 
 import PackageDescription
 
-// 核心包依赖：本地联调用 path，发布前必须切到远端 url。
-//   tool/switch_core_dependency.sh remote   # 切到远端（发布前）
-//   tool/switch_core_dependency.sh local    # 切回本地（联调）
+// 本地联调用 path（见 tool/switch_core_dependency.sh），发布前切回 url。
 let coreDependency: Package.Dependency = .package(url: "https://github.com/yonglemingyu/yu_video_player_ios.git", from: "1.0.0")
 
 let package = Package(
@@ -26,9 +24,7 @@ let package = Package(
       name: "yu_video_player",
       dependencies: [
         .product(name: "FlutterFramework", package: "FlutterFramework"),
-        // 第二个参数是 SwiftPM 由依赖 URL 推导出的 identity（仓库名小写），
-        // 不是远端 Package.swift 里声明的 name: "YUVideoPlayerIOS"，写错会报
-        // unknown package 'YUVideoPlayerIOS'。
+        // package 是 SwiftPM 由路径推导的 identity（仓库名小写），不是远端的 name: YUVideoPlayerIOS。
         .product(name: "YUVideoPlayerIOS", package: "yu_video_player_ios")
       ]
     )

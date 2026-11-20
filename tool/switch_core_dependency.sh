@@ -11,25 +11,12 @@ PKG="$ROOT/ios/yu_video_player/Package.swift"
 
 case "$MODE" in
   local)
-    # 本地联调，默认写 7 级相对路径。宿主工程里本包是被 Flutter 以软链接挂到
-    #   <app>/ios/Flutter/ephemeral/Packages/.packages/yu_video_player
-    # 的，Xcode 解析 path 依赖时不解软链接，是按软链接字面位置往上算的：
-    #   .packages → Packages → ephemeral → Flutter → ios → <app> → <父目录>
-    # 正好 7 级回到三个仓库的共同父目录，再接到同级核心仓库 yu_video_player_ios。
-    # 只写 ../../../ 会停在 ios/Flutter/ephemeral，报
-    # "cannot be accessed (... doesn't exist in file system)"。
-    #
-    # 代价：深度绑死在调用方位置上 —— 本包自己的 example 工程跑过 iOS 后会多一层
-    # example（8 级），单独开 ios/yu_video_player 验证也不是这个深度。
-    # 这些场景用 CORE_LOCAL_PATH 传绝对路径覆盖。
-    #
-    # 目录名必须是 yu_video_player_ios：SwiftPM 的 identity 取自路径最后一段，
-    # 与 Package.swift 里 .product(package:) 的写法必须一致。
+    # 7 级对应 Flutter 的软链接位置（ephemeral/Packages/.packages/<包名>）；example 等其他场景用 CORE_LOCAL_PATH
     if [ -n "${CORE_LOCAL_PATH:-}" ]; then
       CORE_PATH="$CORE_LOCAL_PATH"
     else
       CORE_PATH="../../../../../../../yu_video_player_ios"
-      [ -d "$ROOT/../yu_video_player_ios" ] || echo "提示: 同级目录没有 yu_video_player_ios，宿主工程里会解析失败，可用 CORE_LOCAL_PATH 覆盖" >&2
+      [ -d "$ROOT/../yu_video_player_ios" ] || echo "提示: 同级目录没有 yu_video_player_ios，可用 CORE_LOCAL_PATH 覆盖" >&2
     fi
     LINE="let coreDependency: Package.Dependency = .package(name: \"yu_video_player_ios\", path: \"$CORE_PATH\")"
     ;;
