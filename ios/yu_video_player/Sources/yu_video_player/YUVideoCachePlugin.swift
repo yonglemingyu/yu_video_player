@@ -44,6 +44,15 @@ public class YUVideoCachePlugin: NSObject, FlutterPlugin {
             }
             result(nil)
 
+        case "setEnabled":
+            guard let args = call.arguments as? [String: Any],
+                  let enabled = args["enabled"] as? Bool else {
+                result(FlutterError(code: "bad_args", message: "enabled is required", details: nil))
+                return
+            }
+            YUVideoCache.prefetchEnabled = enabled
+            result(nil)
+
         case "prefetch":
             guard let args = call.arguments as? [String: Any],
                   let vid = args["vid"] as? String,

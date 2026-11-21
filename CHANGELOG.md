@@ -1,3 +1,24 @@
+## 1.1.0
+
+- Default per-video prefix limit reduced from 16MB to 6MB. Only applies to
+  entries created after the change: existing entries keep the limit recorded in
+  their meta until they are cleared.
+- **Behavior change: prefetching is now off by default.** It used to happen
+  whenever the native player loaded a source that had no cache meta, which could
+  pull up to `maxBytesPerVideo` in parallel with the first playback. Nothing is
+  prefetched until `enable()` is called, which also means no cache entry is
+  created and players stay on the plain network path.
+- New `YUVideoPrefixCache.enable()` / `YUVideoPrefixCache.disable()` and the
+  `YUVideoPrefixCache.enabled` getter. Disabling stops prefetching entirely: no
+  probe for the total length and no prefix download, including the implicit
+  prefetch the native player performs the first time a source is loaded.
+  Prefixes already on disk are still used.
+- Core side: `YUVideoCache.setPrefetchEnabled(boolean)` on Android and
+  `YUVideoCache.prefetchEnabled` on iOS gate the single `prefetch` entry point,
+  so one check covers both the explicit Dart call and the implicit player-time
+  prefetch. Both default to `false`. Requires a core release that includes this
+  change.
+
 ## 1.0.3
 
 - Documentation only: `README.md` and `CHANGELOG.md` are now written in English,

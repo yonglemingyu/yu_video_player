@@ -78,6 +78,16 @@ public class YUVideoCachePlugin implements FlutterPlugin, MethodChannel.MethodCa
                 result.success(null);
                 break;
             }
+            case "setEnabled": {
+                Boolean enabled = call.argument("enabled");
+                if (enabled == null) {
+                    result.error("bad_args", "enabled is required", null);
+                    return;
+                }
+                YUVideoCache.setPrefetchEnabled(enabled);
+                result.success(null);
+                break;
+            }
             case "prefetch": {
                 String vid = call.argument("vid");
                 String url = call.argument("url");

@@ -4,7 +4,7 @@
 import PackageDescription
 
 // 本地联调用 path（见 tool/switch_core_dependency.sh），发布前切回 url。
-let coreDependency: Package.Dependency = .package(url: "https://github.com/yonglemingyu/yu_video_player_ios.git", from: "1.0.0")
+let coreDependency: Package.Dependency = .package(url: "https://github.com/yonglemingyu/yu_video_player_ios.git", from: "1.1.0")
 
 let package = Package(
   name: "yu_video_player",

@@ -2,6 +2,22 @@
 
 英文版见 [CHANGELOG.md](CHANGELOG.md)。pub.dev 只渲染 `CHANGELOG.md`，这份中文版供仓库内阅读。
 
+## 1.1.0
+
+- 单条前缀默认上限从 16MB 下调到 6MB。只影响改动之后新建的条目：已有条目仍按
+  各自 meta 里记录的旧上限走，直到被清理。
+- **行为变更：预取改为默认关闭。** 以前只要原生播放器加载到没有 meta 的片源就会
+  自动预取，可能和首播并发拉取最多 `maxBytesPerVideo`。现在不调 `enable()` 就
+  完全不会预取，也就不会建 meta，播放器一直走纯网络。
+- 新增 `YUVideoPrefixCache.enable()` / `YUVideoPrefixCache.disable()` 与
+  `YUVideoPrefixCache.enabled`。关闭后完全停止预取：不再探测总长、不再下载
+  片头，连首次播放时原生内部那次隐式预取也一起停掉。磁盘上已有的前缀照常
+  命中。
+- 核心侧：Android 的 `YUVideoCache.setPrefetchEnabled(boolean)` 与 iOS 的
+  `YUVideoCache.prefetchEnabled` 都拦在 `prefetch` 这唯一入口上，一处判断同时
+  覆盖 Dart 显式预取和播放时的隐式预取，两者默认值都是 `false`。需要核心库
+  同步发版。
+
 ## 1.0.3
 
 - 仅文档变更：`README.md` 与 `CHANGELOG.md` 改为英文，以符合 pub.dev 的

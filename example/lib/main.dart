@@ -31,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   YUCacheStats? _stats;
   List<YUCacheEntry> _entries = const [];
   String _log = '';
+  bool _prefetchOn = YUVideoPrefixCache.enabled;
 
   @override
   void initState() {
@@ -49,6 +50,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _prefetch() async {
+    if (!YUVideoPrefixCache.enabled) {
+      setState(() => _log = '预取已关闭，先打开上面的开关');
+      return;
+    }
     setState(() => _log = 'prefetch 已发起');
     await YUVideoPrefixCache.prefetch(_vid, _url);
     // 下载在后台进行，稍等再刷新
@@ -73,6 +78,23 @@ class _HomePageState extends State<HomePage> {
             Text('单条上限：${(stats.maxBytesPerVideo / 1024 / 1024).toStringAsFixed(0)} MB'),
           ],
           const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _prefetchOn,
+            title: const Text('预取开关'),
+            subtitle: Text(_prefetchOn
+                ? '开启：曝光即预热，首次播放也会建好 meta'
+                : '关闭：prefetch 不生效，缓存不会建立'),
+            onChanged: (value) async {
+              if (value) {
+                await YUVideoPrefixCache.enable();
+              } else {
+                await YUVideoPrefixCache.disable();
+              }
+              if (!mounted) return;
+              setState(() => _prefetchOn = value);
+            },
+          ),
           Row(
             children: [
               FilledButton(onPressed: _prefetch, child: const Text('预取')),

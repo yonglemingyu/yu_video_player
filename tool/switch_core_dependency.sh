@@ -25,7 +25,7 @@ case "$MODE" in
       echo "remote 模式需要 GitHub 用户名：$0 remote <owner>" >&2
       exit 1
     fi
-    LINE="let coreDependency: Package.Dependency = .package(url: \"https://github.com/${OWNER}/yu_video_player_ios.git\", from: \"1.0.0\")"
+    LINE="let coreDependency: Package.Dependency = .package(url: \"https://github.com/${OWNER}/yu_video_player_ios.git\", from: \"1.1.0\")"
     ;;
   *)
     echo "用法: $0 local | remote <github-owner>" >&2

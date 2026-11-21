@@ -25,7 +25,7 @@ Neither platform needs host-side configuration:
 
 ```yaml
 dependencies:
-  yu_video_player: ^1.0.3
+  yu_video_player: ^1.1.0
 ```
 
 Requires Flutter 3.44 or later (the release where Swift Package Manager became
@@ -60,28 +60,55 @@ integration resolves through `mavenLocal()`, so run
 ```dart
 import 'package:yu_video_player/yu_video_player.dart';
 
-// 1. Configure capacity (optional; defaults to 1GB total, 16MB per video)
+// 1. Configure capacity (optional; defaults to 1GB total, 6MB per video)
 await YUVideoPrefixCache.configure(
   maxTotalBytes: 1024 * 1024 * 1024,
-  maxBytesPerVideo: 16 * 1024 * 1024,
+  maxBytesPerVideo: 6 * 1024 * 1024,
 );
 
-// 2. Prefetch when the detail page becomes visible
+// 2. Turn prefetching on (off by default)
+await YUVideoPrefixCache.enable();
+
+// 3. Prefetch when the detail page becomes visible
 await YUVideoPrefixCache.prefetch('3412', playUrl);
 
-// 3. Inspect usage
+// 4. Inspect usage
 final stats = await YUVideoPrefixCache.stats();
 debugPrint('${stats.count} entries, ${stats.totalBytes ~/ 1024 ~/ 1024} MB');
 
-// 4. List entries for a settings screen
+// 5. List entries for a settings screen
 for (final entry in await YUVideoPrefixCache.entries()) {
   debugPrint('${entry.key} ${entry.bytes} ${entry.progress}');
 }
 
-// 5. Clear
+// 6. Clear
 await YUVideoPrefixCache.clear('3412');
 await YUVideoPrefixCache.clearAll();
 ```
+
+### Turning prefetch off
+
+Prefetching is **off by default**: without `enable()` nothing is prefetched and no
+cache is built. On the first play the total length is never probed, so no meta is
+written, `mediaSource` / `playerItem` keep using the plain network path, and later
+plays never hit the cache.
+
+```dart
+await YUVideoPrefixCache.enable();    // on
+await YUVideoPrefixCache.disable();   // off
+
+YUVideoPrefixCache.enabled;           // current state (Dart-side mirror)
+```
+
+`disable()` only stops the "warm the prefix forward" side: no more probing for
+the total length, no more downloading the head of the file, including the
+implicit prefetch the native player triggers the first time a source is loaded.
+**Prefixes already on disk are still used**, so playback keeps the cache path
+and simply stops writing further ahead.
+
+Neither call deletes cached data; use `clear` / `clearAll` for that. The switch
+is not persisted and returns to off after a cold start, so set it on every launch
+the same way you set the capacity limits.
 
 ## Player
 

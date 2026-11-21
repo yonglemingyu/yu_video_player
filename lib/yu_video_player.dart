@@ -2,7 +2,7 @@
 ///
 /// 这个文件是唯一的公开入口，只做聚合导出，不含实现。按能力分四组：
 ///
-/// - 缓存管理 `YUVideoPrefixCache`：预热、用量、清理；
+/// - 缓存管理 `YUVideoPrefixCache`：预热开关、用量、清理；
 /// - 音频会话 `YUPlayerAudio`：全局混音 / 打断策略；
 /// - 数据快照 `YUCacheStats` / `YUCacheEntry`：原生回包的只读视图；
 /// - 播放器 `YUPlayerController` / `YUVideoPlayer`：走缓存链路的播放器。

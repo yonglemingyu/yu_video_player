@@ -22,7 +22,7 @@
 
 ```yaml
 dependencies:
-  yu_video_player: ^1.0.3
+  yu_video_player: ^1.1.0
 ```
 
 最低要求 Flutter 3.44（Swift Package Manager 成为 iOS 默认依赖管理器的那一版）。
@@ -51,28 +51,50 @@ Android 侧本地联调走 `mavenLocal()`，先在核心仓库执行 `./gradlew 
 ```dart
 import 'package:yu_video_player/yu_video_player.dart';
 
-// 1. 配置容量（可选，默认全局 1GB、单条 16MB）
+// 1. 配置容量（可选，默认全局 1GB、单条 6MB）
 await YUVideoPrefixCache.configure(
   maxTotalBytes: 1024 * 1024 * 1024,
-  maxBytesPerVideo: 16 * 1024 * 1024,
+  maxBytesPerVideo: 6 * 1024 * 1024,
 );
 
-// 2. 详情页曝光时预取
+// 2. 打开预取（默认关闭，不调就不会预热）
+await YUVideoPrefixCache.enable();
+
+// 3. 详情页曝光时预取
 await YUVideoPrefixCache.prefetch('3412', playUrl);
 
-// 3. 查看用量
+// 4. 查看用量
 final stats = await YUVideoPrefixCache.stats();
 debugPrint('${stats.count} 条，${stats.totalBytes ~/ 1024 ~/ 1024} MB');
 
-// 4. 设置页列表
+// 5. 设置页列表
 for (final entry in await YUVideoPrefixCache.entries()) {
   debugPrint('${entry.key} ${entry.bytes} ${entry.progress}');
 }
 
-// 5. 清理
+// 6. 清理
 await YUVideoPrefixCache.clear('3412');
 await YUVideoPrefixCache.clearAll();
 ```
+
+### 预取开关
+
+预取默认**关闭**：不调 `enable()` 就不会有任何预取，缓存也不会建立 —— 首次播放
+不探测总长就没有 meta，`mediaSource` / `playerItem` 一直走纯网络，后续也不会命中。
+
+```dart
+await YUVideoPrefixCache.enable();    // 开
+await YUVideoPrefixCache.disable();   // 关
+
+YUVideoPrefixCache.enabled;           // 当前状态（Dart 侧镜像）
+```
+
+`disable()` 只停"往前补前缀"：不再探测总长、不再下载片头，连首次播放时原生
+内部那次隐式预取也一起停掉。**磁盘上已有的前缀照常命中**，播放仍走缓存链路，
+只是不再继续往后写。
+
+两个方法都不删除已有缓存；要清空间仍然用 `clear` / `clearAll`。
+开关不持久化，冷启动回到关闭 —— 与容量配置一样，需要每次启动时按需调一次。
 
 ## 播放器
 
